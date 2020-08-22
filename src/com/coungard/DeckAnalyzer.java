@@ -1,52 +1,41 @@
 package com.coungard;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.coungard.Settings.*;
 
 public class DeckAnalyzer {
-    private static final String[] DECK =
-            {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"};
-
-    private static final int CARD_WIDTH = 64;
-    private static final int WHITE_COLOR_ENTRY = 30;
-    private static final int SHIFT_PIXEL_Y = 3;
-    private static final int WHITE_COLOR = 255;
-    private static final int GRAY_COLOR = 120;
-
-    private final File[] files;
-
+    private final File file;
     BufferedImage subImage;
 
-    public DeckAnalyzer(String directoryPath) {
-        File dir = new File(directoryPath);
-        // Чтение полного списка файлов каталога
-        files = dir.listFiles();
+    public DeckAnalyzer(File file) {
+        this.file = file;
     }
 
     public void analysis() throws IOException {
-        for (int i = 0; i < files.length; i++) {
-            saveSubImage(files[i].getPath());
-            getCardsCount(files[i].getPath());
-        }
+        saveSubImage();
+        getCardsCount();
     }
 
-    private void saveSubImage(String filePath) throws IOException {
-        File file = new File(filePath);
+    private void saveSubImage() throws IOException {
         BufferedImage image = ImageIO.read(file);
-
         subImage = image.getSubimage(0, 550, image.getWidth(), 160);
-        File outputfile = new File("clipped.png");
-        ImageIO.write(subImage, "png", outputfile);
     }
 
-    private void getCardsCount(String filePath) {
+    private void getCardsCount() throws IOException {
         if (subImage == null) {
             System.out.println("Sub image still not clipped!");
             return;
         }
+        Map<Integer, Point> cards = new HashMap<>();
+
         int count = 0;
         boolean found = false;
         boolean firstEntry = false;
@@ -67,8 +56,7 @@ public class DeckAnalyzer {
                 int green = (RGBA >> 8) & 255;
                 int blue = RGBA & 255;
 
-                if (red == WHITE_COLOR && green == WHITE_COLOR && blue == WHITE_COLOR
-                        || red == GRAY_COLOR && green == GRAY_COLOR && blue == GRAY_COLOR) {
+                if (red == 255 && green == 255 && blue == 255 || red == 120 && green == 120 && blue == 120) {
                     whiteColors++;
                     if (whiteColors == WHITE_COLOR_ENTRY) {
                         if (!firstEntry) {
@@ -77,8 +65,9 @@ public class DeckAnalyzer {
                             whiteColors = 0;
                             continue label;
                         }
-                        x = x + CARD_WIDTH - WHITE_COLOR_ENTRY;
                         count++;
+                        cards.put(count, new Point(x - WHITE_COLOR_ENTRY, y));
+                        x = x + CARD_WIDTH - WHITE_COLOR_ENTRY;
                         found = true;
                     }
                 } else {
@@ -86,6 +75,45 @@ public class DeckAnalyzer {
                 }
             }
         }
-        System.out.println("For file " + filePath + "\t Cards count = " + count);
+        System.out.print("For file " + file + "\t Cards count = " + count + "\t");
+        checkSuit(cards);
+    }
+
+    private void checkSuit(Map<Integer, Point> coordinates) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Cards suit: ");
+
+        for (Map.Entry<Integer, Point> entry : coordinates.entrySet()) {
+            Point point = entry.getValue();
+            BufferedImage clipped = subImage.getSubimage(point.x, point.y, CARD_WIDTH, CARD_HEIGHT);
+
+            WritableRaster raster = clipped.getRaster();
+            int width = raster.getWidth();
+            int height = raster.getHeight();
+
+            int reds = 0;
+
+            label:
+            for (int x = 0; x < width; x++) {
+                for (int y = 0; y < height; y++) {
+                    int RGBA = clipped.getRGB(x, y);
+
+                    int red = (RGBA >> 16) & 255;
+                    int green = (RGBA >> 8) & 255;
+                    int blue = RGBA & 255;
+
+                    if (red > 60 && red > green * 2 && red > blue * 2)
+                        reds++;
+                    if (reds > 20)
+                        break label;
+                }
+            }
+            String suit = reds > 20 ? "red" : "black";
+            builder.append(entry.getKey())
+                    .append("=")
+                    .append(suit)
+                    .append(" ");
+        }
+        System.out.println(builder.toString());
     }
 }
