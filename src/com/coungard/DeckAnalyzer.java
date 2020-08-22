@@ -12,6 +12,8 @@ public class DeckAnalyzer {
     private static final int CARD_WIDTH = 64;
     private static final int WHITE_COLOR_ENTRY = 30;
     private static final int SHIFT_PIXEL_Y = 3;
+    private static final int WHITE_COLOR = 255;
+    private static final int GRAY_COLOR = 120;
     private final File[] files;
 
     BufferedImage subImage;
@@ -63,7 +65,8 @@ public class DeckAnalyzer {
                 int green = (RGBA >> 8) & 255;
                 int blue = RGBA & 255;
 
-                if (red == 255 && green == 255 && blue == 255) {
+                if (red == WHITE_COLOR && green == WHITE_COLOR && blue == WHITE_COLOR
+                        || red == GRAY_COLOR && green == GRAY_COLOR && blue == GRAY_COLOR) {
                     whiteColors++;
                     if (whiteColors == WHITE_COLOR_ENTRY) {
                         if (!firstEntry) {
