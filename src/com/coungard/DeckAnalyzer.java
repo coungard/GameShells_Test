@@ -9,11 +9,13 @@ import java.io.IOException;
 public class DeckAnalyzer {
     private static final String[] DECK =
             {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"};
+
     private static final int CARD_WIDTH = 64;
     private static final int WHITE_COLOR_ENTRY = 30;
     private static final int SHIFT_PIXEL_Y = 3;
     private static final int WHITE_COLOR = 255;
     private static final int GRAY_COLOR = 120;
+
     private final File[] files;
 
     BufferedImage subImage;

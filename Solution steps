@@ -1,3 +1,0 @@
-Step 1 - Load image as a BufferedImage. (x, y - pixels)
-Step 2 - Cut 10 % of picture with cards content. (They are located in the center of the picture)
-Step 3 - Check cards count. For every card check 15px White Colors.
