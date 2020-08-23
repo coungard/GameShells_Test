@@ -63,3 +63,5 @@ Solution for check a red suits is simple:
     }
 ```
 where Point(x, y) - a card coordinates on subImage.
+
+
