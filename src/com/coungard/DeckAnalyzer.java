@@ -3,6 +3,7 @@ package com.coungard;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
@@ -15,13 +16,17 @@ public class DeckAnalyzer {
     private final File file;
     BufferedImage subImage;
 
+    private static final Map<Integer, Point> cards = new HashMap<>();
+
     public DeckAnalyzer(File file) {
         this.file = file;
+        cards.clear();
     }
 
     public void analysis() throws IOException {
         saveSubImage();
-        getCardsCount();
+        checkCardsCount();
+        checkSuit();
     }
 
     private void saveSubImage() throws IOException {
@@ -29,12 +34,11 @@ public class DeckAnalyzer {
         subImage = image.getSubimage(0, 550, image.getWidth(), 160);
     }
 
-    private void getCardsCount() throws IOException {
+    private void checkCardsCount() {
         if (subImage == null) {
             System.out.println("Sub image still not clipped!");
             return;
         }
-        Map<Integer, Point> cards = new HashMap<>();
 
         int count = 0;
         boolean found = false;
@@ -47,16 +51,13 @@ public class DeckAnalyzer {
 
         label:
         for (int y = 0; y < height; y++) {
-            if (found)
-                break;
+            if (found) break;
+
             for (int x = 0; x < width; x++) {
-                int RGBA = subImage.getRGB(x, y);
+                Color c = new Color(subImage.getRGB(x, y));
 
-                int red = (RGBA >> 16) & 255;
-                int green = (RGBA >> 8) & 255;
-                int blue = RGBA & 255;
-
-                if (red == 255 && green == 255 && blue == 255 || red == 120 && green == 120 && blue == 120) {
+                if (c.getRed() == 255 && c.getGreen() == 255 && c.getBlue() == 255
+                        || c.getRed() == 120 && c.getGreen() == 120 && c.getBlue() == 120) {
                     whiteColors++;
                     if (whiteColors == WHITE_COLOR_ENTRY) {
                         if (!firstEntry) {
@@ -67,7 +68,7 @@ public class DeckAnalyzer {
                         }
                         count++;
                         cards.put(count, new Point(x - WHITE_COLOR_ENTRY, y));
-                        x = x + CARD_WIDTH - WHITE_COLOR_ENTRY;
+                        x = x - WHITE_COLOR_ENTRY + CARD_WIDTH;
                         found = true;
                     }
                 } else {
@@ -76,38 +77,36 @@ public class DeckAnalyzer {
             }
         }
         System.out.print("For file " + file + "\t Cards count = " + count + "\t");
-        checkSuit(cards);
     }
 
-    private void checkSuit(Map<Integer, Point> coordinates) {
+    private void checkSuit() {
         StringBuilder builder = new StringBuilder();
         builder.append("Cards suit: ");
 
-        for (Map.Entry<Integer, Point> entry : coordinates.entrySet()) {
+        for (Map.Entry<Integer, Point> entry : DeckAnalyzer.cards.entrySet()) {
             Point point = entry.getValue();
             BufferedImage clipped = subImage.getSubimage(point.x, point.y, CARD_WIDTH, CARD_HEIGHT);
 
             WritableRaster raster = clipped.getRaster();
-            int width = raster.getWidth();
-            int height = raster.getHeight();
 
             int reds = 0;
-
             label:
-            for (int x = 0; x < width; x++) {
-                for (int y = 0; y < height; y++) {
-                    int RGBA = clipped.getRGB(x, y);
-
-                    int red = (RGBA >> 16) & 255;
-                    int green = (RGBA >> 8) & 255;
-                    int blue = RGBA & 255;
-
-                    if (red > 60 && red > green * 2 && red > blue * 2)
+            for (int x = 0; x < raster.getWidth(); x++) {
+                for (int y = 0; y < raster.getHeight(); y++) {
+                    Color color = new Color(clipped.getRGB(x, y));
+                    if (color.getRed() > 60
+                            && color.getRed() > color.getBlue() * 2 && color.getRed() > color.getGreen() * 2)
                         reds++;
                     if (reds > 20)
                         break label;
                 }
             }
+            boolean redSuit = reds > 20;
+
+            if (redSuit) {
+                checkHeartsOrDiamonds(raster);
+            }
+
             String suit = reds > 20 ? "red" : "black";
             builder.append(entry.getKey())
                     .append("=")
@@ -115,5 +114,11 @@ public class DeckAnalyzer {
                     .append(" ");
         }
         System.out.println(builder.toString());
+    }
+
+    private Suit checkHeartsOrDiamonds(Raster raster) {
+        // TODO...
+
+        return Suit.Hearts;
     }
 }
