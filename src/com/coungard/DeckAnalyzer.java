@@ -7,8 +7,8 @@ import java.awt.image.WritableRaster;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 import static com.coungard.Settings.*;
 
@@ -232,13 +232,15 @@ public class DeckAnalyzer {
         int width = raster.getWidth();
         int height = raster.getHeight();
 
-        boolean tenOrQueen = false;
+        boolean tenOrQueen;
+        int count = 0;
         for (int y = 0; y < height; y++) {
             Color color = new Color(cardValue.getRGB(width - 1, y));
             if (!Color.WHITE.equals(color)) {
-                tenOrQueen = true;
+                count++;
             }
         }
+        tenOrQueen = count > 5;
 
         boolean entry = false;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -294,7 +296,7 @@ public class DeckAnalyzer {
 
         //jack, five
         figure = true;
-        for (index = 0; index < buffer.length / 2; index++) {
+        for (index = 0; index < buffer.length / 4; index++) {
             if (first == 0 || buffer[index] != first) {
                 figure = false;
                 break;
@@ -418,19 +420,3 @@ public class DeckAnalyzer {
         return true;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
