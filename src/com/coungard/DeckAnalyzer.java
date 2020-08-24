@@ -4,12 +4,11 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 import static com.coungard.Settings.*;
 
@@ -38,11 +37,11 @@ public class DeckAnalyzer {
         BufferedImage image = ImageIO.read(file);
         tableArea = image.getSubimage(0, 550, image.getWidth(), 160);
 
-        try {
-            ImageIO.write(tableArea, "png", new File("sub/" + file.getPath()));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            ImageIO.write(tableArea, "png", new File("sub/" + file.getPath()));
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
     private void checkCardsCount() {
@@ -125,21 +124,20 @@ public class DeckAnalyzer {
             }
             boolean redSuit = reds > 20;
 
-            checkCardValue(entry.getKey());
-
-            String suitValue = "";
+            String value = checkCardValue(entry.getKey());
+            Suit suit;
             if (redSuit) {
-                Suit suit = checkHeartsOrDiamonds(cardArea);
-                suitValue = "red [" + suit + "]";
+                suit = checkHeartsOrDiamonds(cardArea);
             } else {
-                Suit suit = checkClumbsOrSpides(cardArea);
-                suitValue = "black [" + suit + "]";
+                suit = checkClumbsOrSpides(cardArea);
             }
 
             builder.append(entry.getKey())
-                    .append("=")
-                    .append(suitValue)
-                    .append(" ");
+                    .append("=[")
+                    .append(value != null ? value : "")
+                    .append(" ")
+                    .append(suit)
+                    .append("] ");
         }
         boolean valid = checkValid();
         if (!valid)
@@ -218,13 +216,69 @@ public class DeckAnalyzer {
         }
     }
 
-    private void checkCardValue(int key) throws IOException {
+    private String checkCardValue(int key) throws IOException {
         BufferedImage cardValue = cardArea.getSubimage(4, 4, DIMENSION.width, DIMENSION.height);
         String name = file.getName();
         String[] parts = name.split("\\.");
-        ImageIO.write(cardValue, "png",
-                new File("sub/images/" + parts[0] + "_" + key + "_val." + parts[1]));
+//        ImageIO.write(cardValue, "png",
+//                new File("sub/images/" + parts[0] + "_" + key + "_val." + parts[1]));
 
+        WritableRaster raster = cardValue.getRaster();
+        int width = raster.getWidth();
+        int height = raster.getHeight();
+
+        boolean entry = false;
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        label:
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width / 2; x++) {
+                Color color = new Color(cardValue.getRGB(x, y));
+
+                if (Color.WHITE.equals(color)) {
+                    if (x == width / 2 - 1 && entry)
+                        break label;
+                } else {
+                    entry = true;
+                    baos.write(x);
+                    break;
+                }
+            }
+        }
+
+        System.out.println(Arrays.toString(baos.toByteArray()));
+        return getResultFromBytes(baos.toByteArray());
+    }
+
+    // check sequence: King, 10
+    private String getResultFromBytes(byte[] buffer) {
+        byte first = buffer[0];
+        byte second = buffer[1];
+        byte third = buffer[2];
+        byte last = buffer[buffer.length - 1];
+
+        boolean figure = true;
+        int iter;
+        for (iter = 1; iter < buffer.length; iter++) {
+            if (first != buffer[iter] || first == 0) {
+                figure = false;
+                break;
+            }
+        }
+        if (iter > 15 && figure) {
+            return "KING";
+        }
+
+        figure = true;
+        for (iter = buffer.length  - 1; iter > buffer.length / 2; iter--) {
+            if (last != buffer[iter] || last == 0) {
+                figure = false;
+                break;
+            }
+        }
+        if (figure && last / 2 > second) {
+            return "TEN";
+        }
+        return null;
     }
 
     private boolean checkValid() {

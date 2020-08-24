@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Comparator;
 
 public class Laucher {
     private static final String imagesPath = "images";
@@ -21,7 +23,9 @@ public class Laucher {
         if (Files.isDirectory(Paths.get(imagesPath))) {
             File dir = new File(imagesPath);
             File[] files = dir.listFiles();
+
             if (files != null) {
+                Arrays.sort(files, Comparator.comparing(File::getName));
                 for (File file : files) {
                     if (file.getName().split("\\.").length < 3) {
                         DeckAnalyzer analyzer = new DeckAnalyzer(file);
