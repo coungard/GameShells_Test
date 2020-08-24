@@ -4,7 +4,7 @@ import java.awt.*;
 
 public abstract class Settings {
 
-    public static final String[] DECK = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"};
+    public static final String[] DECK = {"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"};
 
     public static final int CARD_WIDTH = 64;
     public static final int CARD_HEIGHT = 90;

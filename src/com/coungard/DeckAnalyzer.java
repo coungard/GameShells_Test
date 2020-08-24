@@ -15,11 +15,13 @@ import static com.coungard.Settings.*;
 public class DeckAnalyzer {
     private static final Map<Integer, Point> cards = new HashMap<>();
     private List<Suit> suitList = new ArrayList<>();
+    private List<Deck> deckList = new ArrayList<>();
     private final File file;
 
     private BufferedImage tableArea;
     private BufferedImage cardArea;
 
+    private StringBuilder cardSequenceString;
     public static int errors;
 
     public DeckAnalyzer(File file) {
@@ -124,7 +126,7 @@ public class DeckAnalyzer {
             }
             boolean redSuit = reds > 20;
 
-            String value = checkCardValue(entry.getKey());
+            Deck deck = findDeck(entry.getKey());
             Suit suit;
             if (redSuit) {
                 suit = checkHeartsOrDiamonds(cardArea);
@@ -134,14 +136,17 @@ public class DeckAnalyzer {
 
             builder.append(entry.getKey())
                     .append("=[")
-                    .append(value != null ? value : "")
+                    .append(deck != null ? deck : "")
                     .append(" ")
                     .append(suit)
                     .append("] ");
         }
+
+        cardSequenceString = builder;
         boolean valid = checkValid();
-        if (!valid)
+        if (!valid) {
             errors++;
+        }
 
         builder.append("\t").append(valid ? " NICE" : "ERROR!");
         System.out.println(builder.toString());
@@ -216,26 +221,34 @@ public class DeckAnalyzer {
         }
     }
 
-    private String checkCardValue(int key) throws IOException {
+    private Deck findDeck(int key) throws IOException {
         BufferedImage cardValue = cardArea.getSubimage(4, 4, DIMENSION.width, DIMENSION.height);
         String name = file.getName();
         String[] parts = name.split("\\.");
-//        ImageIO.write(cardValue, "png",
-//                new File("sub/images/" + parts[0] + "_" + key + "_val." + parts[1]));
+        ImageIO.write(cardValue, "png",
+                new File("sub/images/" + parts[0] + "_" + key + "_val." + parts[1]));
 
         WritableRaster raster = cardValue.getRaster();
         int width = raster.getWidth();
         int height = raster.getHeight();
 
+        boolean tenOrQueen = false;
+        for (int y = 0; y < height; y++) {
+            Color color = new Color(cardValue.getRGB(width - 1, y));
+            if (!Color.WHITE.equals(color)) {
+                tenOrQueen = true;
+            }
+        }
+
         boolean entry = false;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         label:
         for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width / 2; x++) {
+            for (int x = 0; x < width; x++) {
                 Color color = new Color(cardValue.getRGB(x, y));
 
                 if (Color.WHITE.equals(color)) {
-                    if (x == width / 2 - 1 && entry)
+                    if (x == width - 1 && entry)
                         break label;
                 } else {
                     entry = true;
@@ -244,39 +257,65 @@ public class DeckAnalyzer {
                 }
             }
         }
-
         System.out.println(Arrays.toString(baos.toByteArray()));
+
+        if (tenOrQueen) {
+            if (baos.toByteArray()[1] > 8) {
+                deckList.add(Deck.QUEEN);
+                return Deck.QUEEN;
+            } else {
+                deckList.add(Deck.TEN);
+                return Deck.TEN;
+            }
+        }
         return getResultFromBytes(baos.toByteArray());
     }
 
-    // check sequence: King, 10
-    private String getResultFromBytes(byte[] buffer) {
+    // check sequence: King, Jack, Five
+    private Deck getResultFromBytes(byte[] buffer) {
         byte first = buffer[0];
         byte second = buffer[1];
         byte third = buffer[2];
         byte last = buffer[buffer.length - 1];
 
+        // king
         boolean figure = true;
-        int iter;
-        for (iter = 1; iter < buffer.length; iter++) {
-            if (first != buffer[iter] || first == 0) {
+        int index;
+        for (index = 1; index < buffer.length; index++) {
+            if (first != buffer[index] || first == 0) {
                 figure = false;
                 break;
             }
         }
-        if (iter > 15 && figure) {
-            return "KING";
+        if (index > 15 && figure) {
+            deckList.add(Deck.KING);
+            return Deck.KING;
         }
 
+        //jack, five
         figure = true;
-        for (iter = buffer.length  - 1; iter > buffer.length / 2; iter--) {
-            if (last != buffer[iter] || last == 0) {
+        for (index = 0; index < buffer.length / 2; index++) {
+            if (first == 0 || buffer[index] != first) {
                 figure = false;
                 break;
             }
         }
-        if (figure && last / 2 > second) {
-            return "TEN";
+        int oldValue = buffer.length - 1;
+        for (index = buffer.length - 2; index > buffer.length - 4; index--) {
+            if (oldValue < buffer[index]) {
+                figure = false;
+                break;
+            }
+        }
+        if (figure) {
+            if (first - buffer[index] > 5) {
+                deckList.add(Deck.JACK);
+                return Deck.JACK;
+            }
+            if (first - buffer[index] > 0) {
+                deckList.add(Deck.FIVE);
+                return Deck.FIVE;
+            }
         }
         return null;
     }
@@ -317,6 +356,62 @@ public class DeckAnalyzer {
                     }
                     break;
                 default:
+                    break;
+            }
+        }
+
+        iter = 0;
+        for (char c : content) {
+            switch (c) {
+                case 'K':
+                    if (deckList.size() <= iter) {
+                        return false;
+                    }
+                    boolean valid = deckList.get(iter).equals(Deck.KING);
+                    iter++;
+                    if (!valid) {
+                        return false;
+                    }
+                    break;
+                case 'J':
+                    if (deckList.size() <= iter) {
+                        return false;
+                    }
+                    valid = deckList.get(iter).equals(Deck.JACK);
+                    iter++;
+                    if (!valid) {
+                        return false;
+                    }
+                    break;
+                case '1':
+                    if (deckList.size() <= iter) {
+                        return false;
+                    }
+                    valid = deckList.get(iter).equals(Deck.TEN);
+                    iter++;
+                    if (!valid) {
+                        return false;
+                    }
+                    break;
+                case '5':
+                    if (deckList.size() <= iter) {
+                        return false;
+                    }
+                    valid = deckList.get(iter).equals(Deck.FIVE);
+                    iter++;
+                    if (!valid) {
+                        return false;
+                    }
+                    break;
+                case 'Q':
+                    if (deckList.size() <= iter) {
+                        return false;
+                    }
+                    valid = deckList.get(iter).equals(Deck.QUEEN);
+                    iter++;
+                    if (!valid) {
+                        return false;
+                    }
                     break;
             }
         }
