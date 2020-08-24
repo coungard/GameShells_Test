@@ -14,17 +14,18 @@ import java.util.Map;
 import static com.coungard.Settings.*;
 
 public class DeckAnalyzer {
-    private final File file;
-    BufferedImage subImage;
-
     private static final Map<Integer, Point> cards = new HashMap<>();
-
     private List<Suit> suitList = new ArrayList<>();
+    private final File file;
+
+    private BufferedImage tableArea;
+    private BufferedImage cardArea;
+
+    public static int errors;
 
     public DeckAnalyzer(File file) {
         this.file = file;
         cards.clear();
-        suitList.clear();
     }
 
     public void analysis() throws IOException {
@@ -35,17 +36,17 @@ public class DeckAnalyzer {
 
     private void saveSubImage() throws IOException {
         BufferedImage image = ImageIO.read(file);
-        subImage = image.getSubimage(0, 550, image.getWidth(), 160);
+        tableArea = image.getSubimage(0, 550, image.getWidth(), 160);
 
         try {
-            ImageIO.write(subImage, "png", new File("sub/" + file.getPath()));
+            ImageIO.write(tableArea, "png", new File("sub/" + file.getPath()));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     private void checkCardsCount() {
-        if (subImage == null) {
+        if (tableArea == null) {
             System.out.println("Sub image still not clipped!");
             return;
         }
@@ -55,7 +56,7 @@ public class DeckAnalyzer {
         boolean firstEntry = false;
         int whiteColors = 0;
 
-        WritableRaster raster = subImage.getRaster();
+        WritableRaster raster = tableArea.getRaster();
         int width = raster.getWidth();
         int height = raster.getHeight();
 
@@ -63,7 +64,7 @@ public class DeckAnalyzer {
         for (int y = 0; y < height; y++) {
             if (found) break;
             for (int x = 0; x < width; x++) {
-                Color c = new Color(subImage.getRGB(x, y));
+                Color c = new Color(tableArea.getRGB(x, y));
 
                 if (c.getRed() == 255 && c.getGreen() == 255 && c.getBlue() == 255
                         || c.getRed() == 120 && c.getGreen() == 120 && c.getBlue() == 120) {
@@ -86,35 +87,35 @@ public class DeckAnalyzer {
                 }
             }
         }
-        for (Map.Entry<Integer, Point> entry : DeckAnalyzer.cards.entrySet()) {
-            Point point = entry.getValue();
-            BufferedImage clipped = subImage.getSubimage(point.x, point.y, CARD_WIDTH, CARD_HEIGHT);
-            try {
-                String name = file.getName();
-                String[] parts = name.split("\\.");
-                ImageIO.write(clipped, "png",
-                        new File("sub/images/" + parts[0] + "_" + entry.getKey() + "." + parts[1]));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+//        for (Map.Entry<Integer, Point> entry : DeckAnalyzer.cards.entrySet()) {
+//            Point point = entry.getValue();
+//            BufferedImage clipped = tableArea.getSubimage(point.x, point.y, CARD_WIDTH, CARD_HEIGHT);
+//            try {
+//                String name = file.getName();
+//                String[] parts = name.split("\\.");
+//                ImageIO.write(clipped, "png",
+//                        new File("sub/images/" + parts[0] + "_" + entry.getKey() + "." + parts[1]));
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
         System.out.print("For file " + file + "\t Cards count = " + count + "\t");
     }
 
-    private void checkSuit() {
+    private void checkSuit() throws IOException {
         StringBuilder builder = new StringBuilder();
         builder.append("Cards suit: ");
 
         for (Map.Entry<Integer, Point> entry : DeckAnalyzer.cards.entrySet()) {
             Point point = entry.getValue();
-            BufferedImage clipped = subImage.getSubimage(point.x, point.y, CARD_WIDTH, CARD_HEIGHT);
-            WritableRaster raster = clipped.getRaster();
+            cardArea = tableArea.getSubimage(point.x, point.y, CARD_WIDTH, CARD_HEIGHT);
+            WritableRaster raster = cardArea.getRaster();
 
             int reds = 0;
             label:
             for (int x = 0; x < raster.getWidth(); x++) {
                 for (int y = 0; y < raster.getHeight(); y++) {
-                    Color color = new Color(clipped.getRGB(x, y));
+                    Color color = new Color(cardArea.getRGB(x, y));
                     if (color.getRed() > 60
                             && color.getRed() > color.getBlue() * 2 && color.getRed() > color.getGreen() * 2)
                         reds++;
@@ -124,12 +125,14 @@ public class DeckAnalyzer {
             }
             boolean redSuit = reds > 20;
 
+            checkCardValue(entry.getKey());
+
             String suitValue = "";
             if (redSuit) {
-                Suit suit = checkHeartsOrDiamonds(clipped);
+                Suit suit = checkHeartsOrDiamonds(cardArea);
                 suitValue = "red [" + suit + "]";
             } else {
-                Suit suit = checkClumbsOrSpides(clipped);
+                Suit suit = checkClumbsOrSpides(cardArea);
                 suitValue = "black [" + suit + "]";
             }
 
@@ -139,52 +142,11 @@ public class DeckAnalyzer {
                     .append(" ");
         }
         boolean valid = checkValid();
+        if (!valid)
+            errors++;
 
         builder.append("\t").append(valid ? " NICE" : "ERROR!");
-
         System.out.println(builder.toString());
-    }
-
-    private boolean checkValid() {
-        String fileName = file.getName(); // 2cQc5s_3c.png
-        char[] content = fileName.split("_")[0].toCharArray();
-
-        int iter = 0;
-        for (char c : content) {
-            switch (c) {
-                case 'c':
-                    boolean valid = suitList.get(iter).equals(Suit.Clubs);
-                    iter++;
-                    if (!valid) {
-                        return false;
-                    }
-                    break;
-                case 's':
-                    valid = suitList.get(iter).equals(Suit.Spades);
-                    iter++;
-                    if (!valid) {
-                        return false;
-                    }
-                    break;
-                case 'h':
-                    valid = suitList.get(iter).equals(Suit.Hearts);
-                    iter++;
-                    if (!valid) {
-                        return false;
-                    }
-                    break;
-                case 'd':
-                    valid = suitList.get(iter).equals(Suit.Diamonds);
-                    iter++;
-                    if (!valid) {
-                        return false;
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-        return true;
     }
 
     private Suit checkClumbsOrSpides(BufferedImage clipped) {
@@ -254,6 +216,57 @@ public class DeckAnalyzer {
             suitList.add(Suit.Hearts);
             return Suit.Hearts;
         }
+    }
+
+    private void checkCardValue(int key) throws IOException {
+        BufferedImage cardValue = cardArea.getSubimage(4, 4, DIMENSION.width, DIMENSION.height);
+        String name = file.getName();
+        String[] parts = name.split("\\.");
+        ImageIO.write(cardValue, "png",
+                new File("sub/images/" + parts[0] + "_" + key + "_val." + parts[1]));
+
+    }
+
+    private boolean checkValid() {
+        String fileName = file.getName(); // 2cQc5s_3c.png
+        char[] content = fileName.split("_")[0].toCharArray();
+
+        int iter = 0;
+        for (char c : content) {
+            switch (c) {
+                case 'c':
+                    boolean valid = suitList.get(iter).equals(Suit.Clubs);
+                    iter++;
+                    if (!valid) {
+                        return false;
+                    }
+                    break;
+                case 's':
+                    valid = suitList.get(iter).equals(Suit.Spades);
+                    iter++;
+                    if (!valid) {
+                        return false;
+                    }
+                    break;
+                case 'h':
+                    valid = suitList.get(iter).equals(Suit.Hearts);
+                    iter++;
+                    if (!valid) {
+                        return false;
+                    }
+                    break;
+                case 'd':
+                    valid = suitList.get(iter).equals(Suit.Diamonds);
+                    iter++;
+                    if (!valid) {
+                        return false;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        return true;
     }
 }
 

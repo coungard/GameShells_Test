@@ -16,6 +16,7 @@ public class Laucher {
             Files.createDirectory(Paths.get("sub/images/"));
         }
 
+        DeckAnalyzer.errors = 0;
         int count = 0;
         if (Files.isDirectory(Paths.get(imagesPath))) {
             File dir = new File(imagesPath);
@@ -32,6 +33,8 @@ public class Laucher {
         } else {
             throw new RuntimeException("Directory " + imagesPath + " does not exists");
         }
-        System.out.println("Files analysed: " + count);
+        System.out.println("\nFiles analysed: " + count);
+        System.out.println("Errors: " + DeckAnalyzer.errors);
+        System.out.println("Recognitiion errors: " + (DeckAnalyzer.errors * 100 / count));
     }
 }
