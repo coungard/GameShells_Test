@@ -21,8 +21,8 @@ public class DeckAnalyzer {
     private BufferedImage tableArea;
     private BufferedImage cardArea;
 
-    private StringBuilder cardSequenceString;
     public static int errors;
+    private Map<Integer, Boolean> grayCards = new HashMap<>();
 
     public DeckAnalyzer(File file) {
         this.file = file;
@@ -39,11 +39,11 @@ public class DeckAnalyzer {
         BufferedImage image = ImageIO.read(file);
         tableArea = image.getSubimage(0, 550, image.getWidth(), 160);
 
-//        try {
-//            ImageIO.write(tableArea, "png", new File("sub/" + file.getPath()));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        try {
+            ImageIO.write(tableArea, "png", new File("sub/" + file.getPath()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void checkCardsCount() {
@@ -62,15 +62,14 @@ public class DeckAnalyzer {
         int height = raster.getHeight();
 
         label:
-        for (int y = 0; y < height; y++) {
+        for (int y = 30; y < height; y++) {
             if (found) break;
-            for (int x = 0; x < width; x++) {
+            for (int x = 130; x < width; x++) {
                 Color c = new Color(tableArea.getRGB(x, y));
 
-                if (c.getRed() == 255 && c.getGreen() == 255 && c.getBlue() == 255
-                        || c.getRed() == 120 && c.getGreen() == 120 && c.getBlue() == 120) {
+                if (Color.WHITE.equals(c) || GRAY_BACKGROUND.equals(c)) {
                     whiteColors++;
-                    if (whiteColors == WHITE_COLOR_ENTRY) {
+                    if (whiteColors == COLOR_ENTRY) {
                         if (!firstEntry) {
                             y = y + SHIFT_PIXEL_Y;
                             firstEntry = true;
@@ -78,8 +77,9 @@ public class DeckAnalyzer {
                             continue label;
                         } else {
                             count++;
-                            cards.put(count, new Point(x - WHITE_COLOR_ENTRY, y - SHIFT_PIXEL_Y));
-                            x = x - WHITE_COLOR_ENTRY + CARD_WIDTH;
+                            grayCards.put(count, GRAY_BACKGROUND.equals(c));
+                            cards.put(count, new Point(x - COLOR_ENTRY, y - SHIFT_PIXEL_Y));
+                            x = x - COLOR_ENTRY + CARD_WIDTH;
                             found = true;
                         }
                     }
@@ -88,18 +88,6 @@ public class DeckAnalyzer {
                 }
             }
         }
-//        for (Map.Entry<Integer, Point> entry : DeckAnalyzer.cards.entrySet()) {
-//            Point point = entry.getValue();
-//            BufferedImage clipped = tableArea.getSubimage(point.x, point.y, CARD_WIDTH, CARD_HEIGHT);
-//            try {
-//                String name = file.getName();
-//                String[] parts = name.split("\\.");
-//                ImageIO.write(clipped, "png",
-//                        new File("sub/images/" + parts[0] + "_" + entry.getKey() + "." + parts[1]));
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
         System.out.print("For file " + file + "\t Cards count = " + count + "\t");
     }
 
@@ -129,9 +117,9 @@ public class DeckAnalyzer {
             Deck deck = findDeck(entry.getKey());
             Suit suit;
             if (redSuit) {
-                suit = checkHeartsOrDiamonds(cardArea);
+                suit = checkHeartsOrDiamonds();
             } else {
-                suit = checkClumbsOrSpides(cardArea);
+                suit = checkClumbsOrSpides(entry.getKey());
             }
 
             builder.append(entry.getKey())
@@ -142,7 +130,6 @@ public class DeckAnalyzer {
                     .append("] ");
         }
 
-        cardSequenceString = builder;
         boolean valid = checkValid();
         if (!valid) {
             errors++;
@@ -152,8 +139,9 @@ public class DeckAnalyzer {
         System.out.println(builder.toString());
     }
 
-    private Suit checkClumbsOrSpides(BufferedImage clipped) {
-        WritableRaster raster = clipped.getRaster();
+    private Suit checkClumbsOrSpides(int key) {
+        WritableRaster raster = cardArea.getRaster();
+        boolean gray = grayCards.get(key);
 
         int whiteSpace = 0;
         int grow = 0;
@@ -162,8 +150,8 @@ public class DeckAnalyzer {
         label:
         for (int x = raster.getWidth() - 10; x > raster.getWidth() / 2; x--) {
             for (int y = raster.getHeight() / 2; y < raster.getHeight() - 10; y++) {
-                Color color = new Color(clipped.getRGB(x, y));
-                if (!Color.WHITE.equals(color)) {
+                Color color = new Color(cardArea.getRGB(x, y));
+                if (gray ? !GRAY_BACKGROUND.equals(color) : !Color.WHITE.equals(color)) {
                     if (whiteSpace != 0) {
                         if (y <= whiteSpace) {
                             if (y == whiteSpace && repeat) {
@@ -190,8 +178,8 @@ public class DeckAnalyzer {
         }
     }
 
-    private Suit checkHeartsOrDiamonds(BufferedImage clipped) {
-        WritableRaster raster = clipped.getRaster();
+    private Suit checkHeartsOrDiamonds() {
+        WritableRaster raster = cardArea.getRaster();
 
         boolean empty = false;
         boolean entry = false;
@@ -202,7 +190,7 @@ public class DeckAnalyzer {
                 break;
             empty = true;
             for (int x = raster.getWidth() - 1; x > 0; x--) {
-                Color color = new Color(clipped.getRGB(x, y));
+                Color color = new Color(cardArea.getRGB(x, y));
                 if (color.getRed() > 60
                         && color.getRed() > color.getBlue() * 2 && color.getRed() > color.getGreen() * 2) {
                     entries++;
@@ -232,11 +220,13 @@ public class DeckAnalyzer {
         int width = raster.getWidth();
         int height = raster.getHeight();
 
+        boolean gray = grayCards.get(key);
         boolean tenOrQueen;
         int count = 0;
         for (int y = 0; y < height; y++) {
             Color color = new Color(cardValue.getRGB(width - 1, y));
-            if (!Color.WHITE.equals(color)) {
+
+            if (gray ? !GRAY_BACKGROUND.equals(color) : !Color.WHITE.equals(color)) {
                 count++;
             }
         }
@@ -249,7 +239,7 @@ public class DeckAnalyzer {
             for (int x = 0; x < width; x++) {
                 Color color = new Color(cardValue.getRGB(x, y));
 
-                if (Color.WHITE.equals(color)) {
+                if (gray ? GRAY_BACKGROUND.equals(color) : Color.WHITE.equals(color)) {
                     if (x == width - 1 && entry)
                         break label;
                 } else {
@@ -262,7 +252,7 @@ public class DeckAnalyzer {
         System.out.println(Arrays.toString(baos.toByteArray()));
 
         if (tenOrQueen) {
-            if (baos.toByteArray()[1] > 8) {
+            if (baos.toByteArray()[2] > 3) {
                 deckList.add(Deck.QUEEN);
                 return Deck.QUEEN;
             } else {
@@ -276,9 +266,6 @@ public class DeckAnalyzer {
     // check sequence: King, Jack, Five
     private Deck getResultFromBytes(byte[] buffer) {
         byte first = buffer[0];
-        byte second = buffer[1];
-        byte third = buffer[2];
-        byte last = buffer[buffer.length - 1];
 
         // king
         boolean figure = true;
