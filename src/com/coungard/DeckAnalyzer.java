@@ -289,9 +289,9 @@ public class DeckAnalyzer {
                 break;
             }
         }
-        int oldValue = buffer.length - 1;
+        int previous = buffer.length - 1;
         for (index = buffer.length - 2; index > buffer.length - 4; index--) {
-            if (oldValue < buffer[index]) {
+            if (previous < buffer[index]) {
                 figure = false;
                 break;
             }
@@ -306,6 +306,28 @@ public class DeckAnalyzer {
                 return Deck.FIVE;
             }
         }
+
+        // 2, 7 of Ace
+        previous = buffer[buffer.length - 2];
+        for (index = buffer.length - 2; index >= 0; index--) {
+            if (previous > buffer[index]) {
+                break;
+            }
+            previous = buffer[index];
+        }
+        if (index < buffer.length / 2) {
+            if (index < 2) {
+                deckList.add(Deck.ACE);
+                return Deck.ACE;
+            } else if (index < 5) {
+                deckList.add(Deck.SEVEN);
+                return Deck.SEVEN;
+            } else {
+                deckList.add(Deck.TWO);
+                return Deck.TWO;
+            }
+        }
+
         return null;
     }
 
@@ -350,13 +372,54 @@ public class DeckAnalyzer {
         }
 
         iter = 0;
+        boolean valid;
         for (char c : content) {
             switch (c) {
-                case 'K':
+                case '2':
                     if (deckList.size() <= iter) {
                         return false;
                     }
-                    boolean valid = deckList.get(iter).equals(Deck.KING);
+                    valid = deckList.get(iter).equals(Deck.TWO);
+                    iter++;
+                    if (!valid) {
+                        return false;
+                    }
+                    break;
+                case '3':
+                    break;
+                case '4':
+                    break;
+                case '5':
+                    if (deckList.size() <= iter) {
+                        return false;
+                    }
+                    valid = deckList.get(iter).equals(Deck.FIVE);
+                    iter++;
+                    if (!valid) {
+                        return false;
+                    }
+                    break;
+                case '6':
+                    break;
+                case '7':
+                    if (deckList.size() <= iter) {
+                        return false;
+                    }
+                    valid = deckList.get(iter).equals(Deck.SEVEN);
+                    iter++;
+                    if (!valid) {
+                        return false;
+                    }
+                    break;
+                case '8':
+                    break;
+                case '9':
+                    break;
+                case '1':
+                    if (deckList.size() <= iter) {
+                        return false;
+                    }
+                    valid = deckList.get(iter).equals(Deck.TEN);
                     iter++;
                     if (!valid) {
                         return false;
@@ -372,31 +435,31 @@ public class DeckAnalyzer {
                         return false;
                     }
                     break;
-                case '1':
-                    if (deckList.size() <= iter) {
-                        return false;
-                    }
-                    valid = deckList.get(iter).equals(Deck.TEN);
-                    iter++;
-                    if (!valid) {
-                        return false;
-                    }
-                    break;
-                case '5':
-                    if (deckList.size() <= iter) {
-                        return false;
-                    }
-                    valid = deckList.get(iter).equals(Deck.FIVE);
-                    iter++;
-                    if (!valid) {
-                        return false;
-                    }
-                    break;
                 case 'Q':
                     if (deckList.size() <= iter) {
                         return false;
                     }
                     valid = deckList.get(iter).equals(Deck.QUEEN);
+                    iter++;
+                    if (!valid) {
+                        return false;
+                    }
+                    break;
+                case 'K':
+                    if (deckList.size() <= iter) {
+                        return false;
+                    }
+                    valid = deckList.get(iter).equals(Deck.KING);
+                    iter++;
+                    if (!valid) {
+                        return false;
+                    }
+                    break;
+                case 'A':
+                    if (deckList.size() <= iter) {
+                        return false;
+                    }
+                    valid = deckList.get(iter).equals(Deck.ACE);
                     iter++;
                     if (!valid) {
                         return false;

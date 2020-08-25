@@ -39,6 +39,6 @@ public class Laucher {
         }
         System.out.println("\nFiles analysed: " + count);
         System.out.println("Errors: " + DeckAnalyzer.errors);
-        System.out.println("Recognitiion errors: " + (DeckAnalyzer.errors * 100 / count));
+        System.out.println("Total percentage of errors: " + (DeckAnalyzer.errors * 100 / count) + "%");
     }
 }
