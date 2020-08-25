@@ -6,13 +6,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Scanner;
 
 public class Laucher {
+    private static Scanner scanner = new Scanner(System.in);
+
     public static void main(String[] args) throws IOException {
-        if (args.length == 0) {
-            throw new RuntimeException("Not found image path for scanning...");
-        }
-        String imagesPath = args[0];
+        System.out.println("Enter the path to the folder:");
+        String imagesPath = scanner.nextLine();
         int count = 0;
         if (Files.isDirectory(Paths.get(imagesPath))) {
             File dir = new File(imagesPath);
@@ -29,8 +30,11 @@ public class Laucher {
                 }
             }
         } else {
-            throw new RuntimeException("Directory " + imagesPath + " does not exists");
+            System.out.println("Incorrect path " + imagesPath);
+            scanner.nextLine();
+            return;
         }
         System.out.println("\nFiles analysed: " + count);
+        scanner.nextLine();
     }
 }
