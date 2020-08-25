@@ -67,7 +67,12 @@ where Point(x, y) - a card coordinates on subImage.
 #### Step 5 - Find the difference between hearts and diamonds.
 
 The best explanation is visualization:<br>
-![](res/hearts_or_diamonds2.png)
+![](res/hearts_or_diamonds.png)
 
 We know that diamonds is ***higher*** than hearts.<br>
 We start off from the bottom right point and simply measure the height of the shape's entry.
+
+#### Step 6 - Find the difference between spades and clubs.
+
+Example:<br>
+![](res/spades_or_clubs.png)
