@@ -80,7 +80,11 @@ Example:<br>
 Again we starting from the bottom right point and looking for entries on the diagonal.<br>
 But now, unlike the previous algorithm, we only count the grow increment.
 
-#### Step 7 - Find the Ten and Queen.
+### Step 7 - Find the Deck.
+Before we start parsing cards, we transform the points of the horizontal entries into a byte array, from the start of the first point to the last.<br>
+![](res/entries.png)
+
+#### Step 7.1 - Find the Ten and Queen.
 
 Okay, now we got all suites, let's start looking for a deck. <br>
 Before I start explaining the map search approach, I have to show this shit: <br>
@@ -91,3 +95,16 @@ It can be seen that for the __Queen__ and __Ten__, the value of the card goes be
 ![](res/ten_or_queen.png)
 
 For the solution, we take any initial byte of the entry. If it is less, then it is __Ten__, if it is more then a __Queen__.
+
+#### Step 7.2 - Find the King.
+
+Above in the picture, we noticed that the King has a __solid side__. Therefore, we check for frequent repetition in the array.
+```java
+int i;
+for(i = 0; i < buffer.length; i++) {
+    if (buffer[i] != buffer[i + 1])
+        break;
+}
+if (i == buffer.length)
+    return Deck.King;
+```
