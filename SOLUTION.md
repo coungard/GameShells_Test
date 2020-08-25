@@ -76,3 +76,18 @@ We start off from the bottom right point and simply measure the height of the sh
 
 Example:<br>
 ![](res/spades_or_clubs.png)
+
+Again we starting from the bottom right point and looking for entries on the diagonal.<br>
+But now, unlike the previous algorithm, we only count the grow increment.
+
+#### Step 7 - Find the Ten and Queen.
+
+Okay, now we got all suites, let's start looking for a deck. <br>
+Before I start explaining the map search approach, I have to show this shit: <br>
+![](res/cards_clipped.png)
+
+The card cut algorithm  looks awkward.<br>
+It can be seen that for the __Queen__ and __Ten__, the value of the card goes beyond the bounds.<br>
+![](res/ten_or_queen.png)
+
+For the solution, we take any initial byte of the entry. If it is less, then it is __Ten__, if it is more then a __Queen__.

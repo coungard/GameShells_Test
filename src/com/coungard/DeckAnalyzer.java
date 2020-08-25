@@ -14,8 +14,8 @@ import static com.coungard.Settings.*;
 
 public class DeckAnalyzer {
     private final File file;
-    private Map<Integer, Point> cards = new HashMap<>();
-    private Map<Integer, Boolean> grayCards = new HashMap<>();
+    private final Map<Integer, Point> cards = new HashMap<>();
+    private final Map<Integer, Boolean> grayCards = new HashMap<>();
 
     private BufferedImage tableArea;
     private BufferedImage cardArea;
