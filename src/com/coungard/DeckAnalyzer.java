@@ -240,6 +240,7 @@ public class DeckAnalyzer {
                 return Deck.TWO;
             }
         }
+
         for (index = 0; index < buffer.length - 1; index++) {
             if (buffer[index + 1] > buffer[index])
                 break;

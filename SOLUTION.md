@@ -108,3 +108,42 @@ for(i = 0; i < buffer.length; i++) {
 if (i == buffer.length)
     return Deck.King;
 ```
+
+#### Step 7.3 - Find Jack and Five.
+
+![](res/jack_or_5.png)
+
+Both of these cards have the same point entries up to the middle. <br>
+To see their difference, it is enough to determine the __growth increment__ at the bottom of the figure,
+and compare the final grow index with the initial one.
+
+#### Step 7.4 - Find Ace, Seven and Two.
+
+![](res/ace_seven_two.png)
+
+We see continuous growth in these cards if we start from the end of the array of entry points.<br> 
+For an __Ace__, this is one hundred percent growth to the beginning of the figure. 
+__Seven__ has a little less, and __Two__ has the smallest.<br> As a result, we just compare:
+
+```java
+if (index < buffer.length / 2) {
+    if (index < 2) {
+        return Deck.ACE;
+    } else if (index < 5) {
+        return Deck.SEVEN;
+    } else {
+        return Deck.TWO;
+    }
+}
+```
+
+#### Step 7.5 - Find Four and Sex.
+
+![](res/sex_or_four.png)
+
+Similar to the previous algorithm - we calculate the grow entries, but now we do it from the beginning of the figure.<br>
+Again we compare the last index with the first index:
+```java
+if (index > buffer.length / 2)
+    return buffer[1] - buffer[index] > 7 ? Deck.FOUR : Deck.SEX;
+```
